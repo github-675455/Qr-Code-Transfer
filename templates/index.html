@@ -13,23 +13,44 @@
         }
         var socket = io.connect(ws_scheme + document.domain + ':' + location.port);
         socket.on('join', function() {
-            socket.emit('my event', {data: 'I\'m connected!'});
+
         });
         socket.on('connect', function(){
+            socket.emit('join', {sessionid: socket.id});
             console.log('connect event');
+            console.log(socket.id);
         });
         socket.on('event', function(data){
             console.log(data);
         });
+        socket.on('message', function(data){
+            alert(data);
+        });
         socket.on('disconnect', function(){
             console.log('disconnect event');
         });
+        window.onload = function(){
+            const elementoUsuario = document.getElementById('userid');
+            const elementoMensagem = document.getElementById('message');
+            elementoMensagem.addEventListener('keydown', (event) =>
+            {
+                const keycode = event.key;
+                if(keycode == 'Enter')
+                {
+                    socket.emit('message', {usuario: elementoUsuario.value, message: event.target.value});
+                    console.log(keycode);
+                }
+                console.log(keycode);
+            }, false);
+        };
+
     </script>
 </head>
 <body>
     <div>
         <img src="generate-qr-code">
-        <input type="text">
+        <input id="userid" type="text">
+        <input id="message" type="text">
     </div>
 </body>
 </html>
