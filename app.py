@@ -18,29 +18,20 @@ else:
 
 socketio = SocketIO(app)
 
-clients = []
+clients = {}
 
 @app.route('/generate-qr-code')
 def create_pipeline():
 
-    log.info('session_id: ' + session['id'])
+    s = request.cookies.get('session')
 
-    qrcode_generated = qrcode.make(session['id'], image_factory=qrcode.image.svg.SvgFillImage)
+    qrcode_generated = qrcode.make(s, image_factory=qrcode.image.svg.SvgFillImage)
 
     byteStream = io.BytesIO()
 
     qrcode_generated.save(stream=byteStream)
 
     return Response(byteStream.getvalue().decode(encoding="ascii", errors="ignore"), mimetype='image/svg+xml')
-
-@app.before_request
-def create_session():
-    session_id = session.get('id')
-
-    if session_id == None:
-        session_id = secrets.token_hex(5)
-        session['id'] = session_id
-
 
 @app.route('/')
 def index():
@@ -62,19 +53,52 @@ def global_pipeline(data):
     print("%s connected" % (request.namespace.socket.sessid))
     log.info(' join global pipiline socket ip: ' + request.remote_addr)
 
-@socketio.on('connected')
+@socketio.on('connect')
 def connected():
-    print("%s connected" % (request.sid))
-    clients.append(request.sid)
+    s = request.cookies.get('session')
+
+    if clients.get(s) is None:
+        clients[s] = [request.sid]
+    else:
+        clients[s].append(request.sid)
+
+    print("%s connect" % (request.sid))
+
+@socketio.on('ping')
+def connected():
+    print("%s ping" % (request.sid))
 
 @socketio.on('message')
 def message(data):
-    emit('message', data['message'], room=data['usuario'])
+    pipeline_selecionado = data['user']
+
+    clientes_pipeline = clients.get(pipeline_selecionado)
+
+    for cliente in clientes_pipeline:
+        if cliente == request.sid:
+            continue
+
+        emit('message', data['message'], room=cliente)
+
 
 @socketio.on('disconnect')
 def disconnect():
     print("%s disconnected" % (request.sid))
-    clients.remove(request.sid)
+    s = request.cookies.get('session')
+    if not clients.get(s) is None:
+        clients[s].remove(request.sid)
+        if len(clients[s]) == 0:
+            clients[s] = None
+
+
+
+@app.before_request
+def create_session():
+    session_id = session.get('id')
+
+    if session_id == None:
+        session_id = secrets.token_hex(32)
+        session['id'] = session_id
 
 
 if __name__ == '__main__':
