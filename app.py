@@ -23,9 +23,9 @@ clients = {}
 @app.route('/generate-qr-code')
 def create_pipeline():
 
-    s = request.cookies.get('session')
+    local_session = request.cookies.get('session')
 
-    qrcode_generated = qrcode.make(s, image_factory=qrcode.image.svg.SvgFillImage)
+    qrcode_generated = qrcode.make(local_session, image_factory=qrcode.image.svg.SvgFillImage)
 
     byteStream = io.BytesIO()
 

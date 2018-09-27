@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title></title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
@@ -37,17 +38,16 @@
         });
         window.onload = function()
         {
+            let toCookieSession = localStorage['cookie-session'];
             const elementoUsuario = document.getElementById('userid');
-            const elementoMensagem = document.getElementById('transfer');
-            elementoMensagem.addEventListener('keydown', (event) =>
+            if(toCookieSession != undefined)
             {
-                const keycode = event.key;
-                if(keycode == 'Enter')
-                {
-                    socket.emit('message', {user: elementoUsuario.value, message: event.target.value});
-                    console.log(keycode);
-                }
-                console.log(keycode);
+                elementoUsuario.value = toCookieSession;
+            }
+            const elementoMensagem = document.getElementById('transfer');
+            elementoMensagem.addEventListener('keyup', (event) =>
+            {
+                socket.emit('message', {user: elementoUsuario.value, message: event.target.value});
             }, false);
 
             const elementoScan = document.getElementById('scan-button');
@@ -66,8 +66,10 @@
                 const scanner = new Instascan.Scanner({ video: elementoPreview, backgroundScan: false, mirror: false });
                 scanner.addListener('scan', function (content) {
                     elementoUsuario.value = content;
+                    localStorage['cookie-session'] = elementoUsuario.value;
                     socket.emit('message', {user: elementoUsuario.value, message: elementoMensagem.value});
                     console.log(content);
+                    scanner.stop().catch(e => {});
                 }, false);
 
                 scanner.addListener('active', function (content) {
@@ -132,25 +134,29 @@
             </div>
             <div class="col l6 m6">
                 <span class="center-align">
-                    <a id="scan-button" class="waves-effect waves-light btn-large"><i class="material-icons right">camera_alt</i>Scan</a>
-                    <a id="camera-front" class="btn-large red disabled cameras"><i class="material-icons">camera_front</i></a>
-                    <a id="camera-rear" class="btn-large red disabled cameras"><i class="material-icons">camera_rear</i></a>
-                    <a id="resend-button" class="waves-effect waves-light btn-large"><i class="material-icons right">autorenew</i>Resend</a>
+                    <a id="scan-button" class="waves-effect waves-light btn-large" href="#"><i class="material-icons right">camera_alt</i>Scan</a>
+                    <a id="camera-front" class="btn-large red disabled cameras" href="#"><i class="material-icons">camera_front</i></a>
+                    <a id="camera-rear" class="btn-large red disabled cameras" href="#"><i class="material-icons">camera_rear</i></a>
+                    <a id="resend-button" class="waves-effect waves-light btn-large" href="#"><i class="material-icons right">autorenew</i>Resend</a>
                 </span>
             </div>
         </div>
         <div class="row">
-            <div class="col xl8 offset-xl1 card">
-                <div class="card-content">
-                    <video id="preview" class="col m12" width="100%"></video>
-                </div>
+            <div class="col xl8 offset-xl1">
+                <video id="preview" class="col m12 responsive-video"></video>
             </div>
         </div>
         <div class="row">
-            <div class="col xl8 offset-xl1">
+            <form class="col s12 xl8 offset-xl1">
                 <input id="userid" type="hidden">
-                <input id="transfer" type="text">
-            </div>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <i class="material-icons prefix">send</i>
+                        <textarea placeholder="Input Output" id="transfer" class="materialize-textarea"></textarea>
+                        <label for="transfer">I/O</label>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </body>
